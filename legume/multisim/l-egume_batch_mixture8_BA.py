@@ -11,8 +11,10 @@ import sys
 try:
     import legume
     path_ = os.path.dirname(os.path.abspath(legume.__file__))#local absolute path of L-egume
+    print("hello")
+    print(path_)
 except:
-    path_ = r"C:\Users\beatrice\vrshj-44yui\l-egume\legume" #r'C:\devel\l-egume\legume'#r'C:\devel\grassland'
+    path_ = r"C:\Users\beatrice\l-egume\legume" #r'C:\devel\l-egume\legume'#r'C:\devel\grassland'
 
 print(('path', path_))
 
@@ -23,7 +25,7 @@ import IOtable
 
 global foldin, fxls, ongletBatch, fscenar
 #to define if used for multisimulation or non-regression tests
-opttest = 1#2#4#2#'autre'#3#'exemple'#0#13#
+opttest = 'exemple_BA'#1#2#4#2#'autre'#3#'exemple'#0#13#
 if opttest == 1 or opttest==2 or opttest==3 or opttest==4: #si multisim des test de non regression (1 or 2)
     #global foldin, fxls, ongletBatch, fscenar
     foldin = 'test\inputs'
@@ -43,12 +45,18 @@ elif opttest == 'exemple':
     fxls = 'liste_usms_exemple.xls'
     ongletBatch = 'exemple'
     fscenar = 'liste_scenarios_exemple.xls'
-else: #other multisimulation to be defined (0)
-    #global foldin, fxls, ongletBatch, fscenar
-    #to be manually updated
-    foldin = 'input'#'multisim'
-    fxls = 'liste_usms_essais.xls'#'liste_usms_mix.xls'
-    ongletBatch = 'Champs'#'SimTest'
+elif opttest == 'exemple_BA':
+    # global foldin, fxls, ongletBatch, fscenar
+    foldin = 'multisim'
+    fxls = 'liste_usms_exemple_BA.xls'
+    ongletBatch = 'exemple'
+   # fscenar = 'liste_scenarios_exemple.xls'
+else:  # other multisimulation to be defined (0)
+    # global foldin, fxls, ongletBatch, fscenar
+    # to be manually updated
+    foldin = 'input'  # 'multisim'
+    fxls = 'liste_usms_essais.xls'  # 'liste_usms_mix.xls'
+    ongletBatch = 'Champs'  # 'SimTest'
     fscenar = 'liste_scenarios.xls'
 
 
@@ -104,13 +112,21 @@ for i in range(len(ls_usms['ID_usm'])):
         ongletP = str(ls_usms['ongletP'][i])
         ongletPvois = str(ls_usms['ongletVoisin'][i])
         testsim[name].path_plante = path_plante
-        
+
+        path_variance_geno = os.path.join(path_, 'input', str(ls_usms['var_sd'][i]))
+        ongletP = str(ls_usms['ongletP'][i])
+        ongletPvois = str(ls_usms['ongletVoisin'][i])
+        testsim[name].path_variance_geno = path_variance_geno
+
         #la, lire scenario et changer parametres
         idscenar1 = int(ls_usms['scenario1'][i])
         idscenar2 = int(ls_usms['scenario2'][i])
+        idscenar1_sd = int(ls_usms['scenario1_sd'][i])
+        idscenar2_sd = int(ls_usms['scenario2_sd'][i])
+        moy_modif = float(ls_usms['moy_sd_2'][i])
+        print(moy_modif)
         ongletScenar2 = ongletPvois #fait porter les changements sur fichier parametre voisin
         ongletScenar1 = ongletP
-
         #sol
         path_sol = os.path.join(path_, 'input',str(ls_usms['sol'][i]))
         ongletS = str(ls_usms['ongletS'][i])
@@ -133,9 +149,8 @@ for i in range(len(ls_usms['ID_usm'])):
             arrang = str(ls_usms['arrangement'][i])+str(optdamier)
 
         nommix = '_'+ongletP+'-'+ongletPvois+'_'+arrang+'_scenario'+str(idscenar2)+'-'+str(idscenar1)
-        
 
-        testsim[name].ongletP = ongletP
+        testsim[name].ongletP = ongletP #  ajoute la variable dans le l-systeme
         testsim[name].ongletPvois = ongletPvois
         testsim[name].nbcote = nbcote
         testsim[name].cote = float(ls_usms['cote'][i])
@@ -143,13 +158,18 @@ for i in range(len(ls_usms['ID_usm'])):
         testsim[name].deltalevsd = float(ls_usms['sd_retard'][i])
         testsim[name].typearrangement = str(ls_usms['arrangement'][i])
         testsim[name].optdamier = optdamier
+        testsim[name].opt_sd=1
         testsim[name].idscenar1 = idscenar1
         testsim[name].idscenar2 = idscenar2
-        testsim[name].ongletScenar2 = ongletScenar2
-        testsim[name].ongletScenar1 = ongletScenar1
+        testsim[name].idscenar1_sd = idscenar1_sd
+        testsim[name].idscenar2_sd = idscenar2_sd
+        testsim[name].moy_modif=moy_modif
+        testsim[name].ongletScenar2 = "default"
+        testsim[name].ongletScenar1 = "default"
         testsim[name].Rseed = seednb
         testsim[name].DOYdeb = int(ls_usms['DOYdeb'][i])
         testsim[name].DOYend = int(ls_usms['DOYend'][i])
+
         
         #mise a jour derivartionLength & axiom
         testsim[name].derivationLength = int(ls_usms['DOYend'][i]) - int(ls_usms['DOYdeb'][i])#derivationLength variable predefinie dans L-py
@@ -168,18 +188,20 @@ for i in range(len(ls_usms['ID_usm'])):
 
         #path fichiers de sortie
         testsim[name].path_out = os.path.join(path_, str(ls_usms['folder_out'][i]))
-        testsim[name].outvarfile = 'toto_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.csv'
+        testsim[name].outvarfile = 'toto_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+str(ls_usms['moy_sd_2'][i])+'_'+'.csv'
         testsim[name].lsorgfile = 'lsAxes_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.csv'
-        testsim[name].outHRfile = 'outHR_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.csv'
+        testsim[name].outHRfile = 'outHR_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+str(ls_usms['moy_sd_2'][i])+'_'+'.csv'
         testsim[name].resrootfile = 'resroot_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.csv'
         testsim[name].outBilanNfile = 'BilanN_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.csv'
         testsim[name].outimagefile = 'scene_'+name+nommix+'_'+str(ls_usms['ongletMn'][i])+'_'+str(seednb)+'_'+str(ls_usms['ongletM'][i])+'_'+'.bmp'#'scene.bmp'
+        testsim[name].outsdfile = 'param_sd' + name + nommix + '_' + str(ls_usms['ongletMn'][i]) + '_' + str(
+            seednb) + '_' + str(ls_usms['ongletM'][i]) + '_'+ str(ls_usms['moy_sd_2'][i])+'_'+'.csv'
 
         #plante si dossier out pas cree
         #pourrait faire la lecture les ls_usm directement dans le l-system pour faciliter...+
 
 nb_usms =len(names)#len(ls_usms['ID_usm'])#len(names)#
-
+print(nb_usms)
 #print nb_usms, names
 
 
@@ -193,7 +215,6 @@ def animatelsystem(n):
     testsim[names[n]].animate()
     testsim[names[n]].clear()
     print((''.join((names[n]," - done"))))
-
 
 #run the L-systems
 
